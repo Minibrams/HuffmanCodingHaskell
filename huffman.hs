@@ -125,3 +125,27 @@ get_huffman_tree str =
         leaves = make_leaves freq in 
             make_tree leaves
 
+decode_bit_stream :: String -> Tree -> String 
+decode_bit_stream stream huffman_tree = traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
+
+some_tree = get_huffman_tree "mississippi river is a nice river"
+
+traverse_tree_from_bit_stream :: String -> Tree -> Tree -> String -> String
+traverse_tree_from_bit_stream [] huffman_tree root msg = 
+    let Leaf letter _ = huffman_tree in 
+            msg ++ [letter]
+
+traverse_tree_from_bit_stream (x:xs) huffman_tree root msg =
+    case huffman_tree of 
+        -- Take the left node if encountering a 0, right node otherwise.
+        Node l1 l2 _ -> if x == '0' then traverse_tree_from_bit_stream xs l1 root msg
+                        else             traverse_tree_from_bit_stream xs l2 root msg
+
+        -- If it's a leaf, add the corresponding letter to the message and start again from the root. 
+        Leaf char _  -> let bit_stream = ([x] ++ xs) 
+                            decoded_message = (msg ++ [char]) in
+                                traverse_tree_from_bit_stream bit_stream root root decoded_message
+    
+
+
+
