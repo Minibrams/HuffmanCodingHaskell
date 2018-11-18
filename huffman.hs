@@ -59,10 +59,12 @@ make_leaves (x:xs) =
 
 -- Insert an element into a sorted list so that the resulting list is sorted (ascending)
 sorted_insert :: (Eq a, Ord a) => a -> [a] -> [a]
-sorted_insert element [] = [element]
-sorted_insert element (x:xs) = 
-    if element <= x then [x, element] ++ xs
-    else insert element ([x] ++ xs)
+sorted_insert element lst = sorted_insert_helper element lst []
+
+sorted_insert_helper element [] acc = acc ++ [element]
+sorted_insert_helper element (x:xs) acc = 
+    if element < x then acc ++ [element, x] ++ xs 
+    else sorted_insert_helper element xs (acc ++ [x])
 
 make_tree :: [Tree] -> Tree 
 make_tree leaf_list = 
