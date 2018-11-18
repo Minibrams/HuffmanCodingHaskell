@@ -85,33 +85,33 @@ make_tree_helper (l1 : l2 : leaves) =
 
 -- Use depth first to traverse the tree, adding 0's and 1's for every left and right 
 -- turn, respectively. When a leaf is encountered, add (letter, encoding) to the accumulator. 
-get_encoding_dict :: Tree -> [(Char, String)]
-get_encoding_dict tree = get_encoding_dict_helper tree "" []
+get_encoding_dict :: Tree -> [(Char, [Bool])]
+get_encoding_dict tree = get_encoding_dict_helper tree [] []
 
-get_encoding_dict_helper :: Tree -> String -> [(Char, String)] -> [(Char, String)]
+get_encoding_dict_helper :: Tree -> [Bool] -> [(Char, [Bool])] -> [(Char, [Bool])]
 get_encoding_dict_helper (Leaf letter _) encoding acc = 
     [(letter, encoding)] ++ acc 
 
 get_encoding_dict_helper (Node l1 l2 _) encoding acc = 
     -- Left first
-    let left_acc = get_encoding_dict_helper l1 (encoding ++ "0") acc in 
+    let left_acc = get_encoding_dict_helper l1 (encoding ++ [False]) acc in 
         -- Then take the right
-        get_encoding_dict_helper l2 (encoding ++ "1") left_acc
+        get_encoding_dict_helper l2 (encoding ++ [True]) left_acc
 
-get_encoded_message_from_dict :: String -> [(Char, String)] -> String
+get_encoded_message_from_dict :: String -> [(Char, [Bool])] -> [Bool]
 get_encoded_message_from_dict [x] encoding_dict = 
     let encoding = lookup_value x encoding_dict in 
         case encoding of 
             Just enc -> enc 
-            Nothing -> error "Could not find an encoding for the letter: " ++ [x]
+            Nothing -> error "Could not find an encoding for the letter: " x
 
 get_encoded_message_from_dict (x:xs) encoding_dict = 
     let encoding = lookup_value x encoding_dict in 
         case encoding of
             Just enc -> enc ++ get_encoded_message_from_dict xs encoding_dict
-            Nothing -> error "Could not find an encoding for the letter: " ++ [x] 
+            Nothing -> error "Could not find an encoding for the letter: " x
 
-get_encoded_message :: String -> String
+get_encoded_message :: String -> [Bool]
 get_encoded_message msg = 
     let freq = count_char_frequency msg 
         leaves = make_leaves freq 
@@ -125,12 +125,12 @@ get_huffman_tree str =
         leaves = make_leaves freq in 
             make_tree leaves
 
-decode_bit_stream :: String -> Tree -> String 
+decode_bit_stream :: [Bool] -> Tree -> String 
 decode_bit_stream stream huffman_tree = traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
 
 some_tree = get_huffman_tree "mississippi river is a nice river"
 
-traverse_tree_from_bit_stream :: String -> Tree -> Tree -> String -> String
+traverse_tree_from_bit_stream :: [Bool] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
     let Leaf letter _ = huffman_tree in 
             msg ++ [letter]
@@ -138,7 +138,7 @@ traverse_tree_from_bit_stream [] huffman_tree root msg =
 traverse_tree_from_bit_stream (x:xs) huffman_tree root msg =
     case huffman_tree of 
         -- Take the left node if encountering a 0, right node otherwise.
-        Node l1 l2 _ -> if x == '0' then traverse_tree_from_bit_stream xs l1 root msg
+        Node l1 l2 _ -> if x == False then traverse_tree_from_bit_stream xs l1 root msg
                         else             traverse_tree_from_bit_stream xs l2 root msg
 
         -- If it's a leaf, add the corresponding letter to the message and start again from the root. 
