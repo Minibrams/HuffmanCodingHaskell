@@ -130,7 +130,7 @@ get_huffman_tree str =
 decode_bit_stream :: [Bool] -> Tree -> String 
 decode_bit_stream stream huffman_tree = traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
 
-some_tree = get_huffman_tree "mississippi river is a nice river"
+some_tree = get_huffman_tree "hello"
 
 traverse_tree_from_bit_stream :: [Bool] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
@@ -147,7 +147,31 @@ traverse_tree_from_bit_stream (x:xs) huffman_tree root msg =
         Leaf char _  -> let bit_stream = ([x] ++ xs) 
                             decoded_message = (msg ++ [char]) in
                                 traverse_tree_from_bit_stream bit_stream root root decoded_message
+
+bit_string_to_bool_arr :: String -> [Bool]
+bit_string_to_bool_arr [] = []
+bit_string_to_bool_arr (x:xs) = 
+    if x == '0' then [False] ++ bit_string_to_bool_arr xs 
+    else             [True]  ++ bit_string_to_bool_arr xs 
+
+bool_arr_to_bit_string :: [Bool] -> String
+bool_arr_to_bit_string [] = []
+bool_arr_to_bit_string (x:xs) = 
+    if x then "1" ++ bool_arr_to_bit_string xs 
+    else      "0" ++ bool_arr_to_bit_string xs 
     
 
 
 
+run_encode = do 
+    putStrLn "Please enter a message to encode: "
+    user_input <- getLine 
+    putStrLn "The encoded message is: "
+    let encoded_message = get_encoded_message user_input
+    return encoded_message
+
+run_decode = do 
+    putStrLn "Please enter a message {0,1}* to decode with our proprietary Huffman tree: "
+    user_input <- getLine 
+    let decoded_message = decode_bit_stream (bit_string_to_bool_arr user_input) some_tree 
+    return decoded_message
