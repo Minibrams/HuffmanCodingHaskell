@@ -132,6 +132,13 @@ get_encoded_message msg =
         dict = get_encoding_dict tree in 
             get_encoded_message_from_dict msg dict 
 
+get_encoding_dict_from_string :: String -> [(Char, [Bit])]
+get_encoding_dict_from_string msg = 
+    let freq = count_char_frequency msg 
+        leaves = make_leaves freq 
+        tree = make_tree leaves in
+        get_encoding_dict tree 
+
 
 get_huffman_tree :: String -> Tree
 get_huffman_tree str = 
@@ -153,8 +160,10 @@ some_tree = get_huffman_tree "hello there"
 
 traverse_tree_from_bit_stream :: [Bit] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
-    let Leaf letter _ = huffman_tree in 
-            msg ++ [letter]
+    case huffman_tree of 
+        Leaf letter _ -> msg ++ [letter]
+        Node _ _ _    -> error "Bit stream ended, but traversal did not end at leaf node. Was the bit stream decoded with the right tree?"
+
 
 traverse_tree_from_bit_stream (x:xs) huffman_tree root msg =
     case huffman_tree of 
@@ -186,7 +195,7 @@ run_encode = do
     return encoded_message
 
 run_decode = do 
-    putStrLn "Please enter a bit stream :: [Bit] to decode with our proprietary Huffman tree: "
+    putStrLn "Please enter a bit stream :: [Bit] to decode with our proprietary Huffman coding scheme: "
     user_input <- getLine 
     let decoded_message = read user_input :: [Bit]
     return (decode_bit_stream decoded_message some_tree)

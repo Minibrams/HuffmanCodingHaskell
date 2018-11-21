@@ -151,6 +151,14 @@ get_encoded_message msg n =
             get_encoded_message_from_dict msg dict 
 
 
+get_encoding_dict_from_string :: String -> Int -> [(Char, [Int])]
+get_encoding_dict_from_string msg n = 
+    let freq = count_char_frequency msg 
+        leaves = make_leaves freq 
+        tree = make_tree leaves n in
+        get_encoding_dict tree 
+
+
 get_huffman_tree :: String -> Int -> Tree
 get_huffman_tree str n = 
     let freq = count_char_frequency str 
@@ -166,12 +174,13 @@ decode_bit_stream stream huffman_tree =
         Node _ _ -> traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
         Leaf c f -> replicate f c 
     
-some_tree = get_huffman_tree "hhhhhhh" 2
+mississippi_tree = get_huffman_tree "mississippi river" 3
 
 traverse_tree_from_bit_stream :: [Int] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
-    let Leaf letter _ = huffman_tree in 
-            msg ++ [letter]
+    case huffman_tree of 
+        Leaf letter _ -> msg ++ [letter]
+        Node _ _    -> error "Int stream ended, but traversal did not end at leaf node. Was the bit stream decoded with the right tree?"
 
 traverse_tree_from_bit_stream (x:xs) huffman_tree root msg =
     case huffman_tree of 
@@ -203,7 +212,7 @@ run_decode = do
     putStrLn "Please enter an encoded message :: [Int] to decode: "
     user_input <- getLine
     let u_input = read user_input :: [Int]
-    putStrLn "Decoding message with proprietary and copyrighted n-ary Huffman tree..."
-    let msg = decode_bit_stream u_input some_tree
+    putStrLn "Decoding message with proprietary and copyrighted n-ary Huffman coding scheme..."
+    let msg = decode_bit_stream u_input mississippi_tree
     putStrLn "The decoded message is: "
     return msg
