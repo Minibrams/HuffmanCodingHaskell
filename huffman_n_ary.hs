@@ -146,7 +146,7 @@ get_encoded_message msg n =
             get_encoded_message_from_dict msg dict 
 
 -- Given a string and an integer n, returns the encoding dictionary representing the optimal
--- prefix code for that string with a compression alphabet of arity n.
+-- prefix code for that string with a compression alphabet of size n.
 get_encoding_dict_from_string :: String -> Int -> [(Char, [Int])]
 get_encoding_dict_from_string msg n = 
     let freq = count_char_frequency msg 
@@ -203,7 +203,7 @@ traverse_tree_from_int_stream (x:xs) huffman_tree root msg =
 run_encode = do 
     putStrLn "Please enter a message to encode: "
     user_input <- getLine 
-    putStrLn "... and the arity of the encoding alphabet: "
+    putStrLn "... and the size of the encoding alphabet: "
     n_str <- getLine 
     let n = read n_str :: Int
     let encoded_message = get_encoded_message user_input n

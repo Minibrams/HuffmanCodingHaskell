@@ -165,7 +165,8 @@ decode_bit_stream stream huffman_tree =
                                     -- From a message with only one unique character.
     
 -- Binary tree used for decoding strings in run_decode.
-some_tree = get_huffman_tree "hello there"
+mississippi_tree :: Tree
+mississippi_tree = get_huffman_tree "mississippi river"
 
 -- Given a bit stream and a binary tree, traverses the tree by reading 
 -- bits from the bit stream in sequence. When a leaf is encountered, the
@@ -211,5 +212,5 @@ run_decode = do
     putStrLn "Please enter a bit stream :: [Bit] to decode with our proprietary Huffman coding scheme: "
     user_input <- getLine 
     let decoded_message = read user_input :: [Bit]
-    return (decode_bit_stream decoded_message some_tree)
+    return (decode_bit_stream decoded_message mississippi_tree)
 
