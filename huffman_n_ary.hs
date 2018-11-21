@@ -5,12 +5,12 @@ data Tree = Leaf Char Int | Node [Tree] Int deriving Show
 
 -- Defining instances of Eq and Ord so I can compare Nodes and Leaves with each other based on their frequency
 instance Eq Tree where 
-    (Leaf _ f1)   == (Leaf _ f2)   = f1 == f2 
-    (Node _ f1) == (Node _ f2) = f1 == f2 
+    (Leaf _ f1)   == (Leaf _ f2) = f1 == f2 
+    (Node _ f1) == (Node _ f2) =   f1 == f2 
 
 instance Ord Tree where 
-    compare (Leaf _ f1)   (Leaf _ f2)   = compare f1 f2 
-    compare (Node _ f1) (Node _ f2) = compare f1 f2 
+    compare (Leaf _ f1)   (Leaf _ f2) = compare f1 f2 
+    compare (Node _ f1) (Node _ f2)   = compare f1 f2 
     compare (Node _ f1) (Leaf _ f2)   = compare f1 f2 
     compare (Leaf _ f1)   (Node _ f2) = compare f1 f2 
 
@@ -21,23 +21,12 @@ frequency (Leaf _ f) = f
 frequency (Node _ f) = f 
 sum_frequency x y = (frequency x) + (frequency y)
 
-set_minus lst1 lst2 = set_minus_helper lst1 lst2 []
-set_minus_helper [] lst acc = acc 
-set_minus_helper lst [] acc = acc ++ lst 
-set_minus_helper (x:xs) (y:ys) acc = 
-    if x == y then set_minus_helper xs ys acc 
-    else set_minus_helper xs ys (acc ++ [x])
-
+sum_frequencies :: [Tree] -> Int
 sum_frequencies [] = 0
 sum_frequencies lst =
     let frequencies = [f | f <- (map (\x -> frequency x) lst) ] in
         sum frequencies
     
-
-element_of element [] = False
-element_of element (x:xs) = 
-    if element == x then True 
-    else element_of element xs 
 
 lookup_value :: (Eq a) => a -> [(a, b)] -> Maybe b
 lookup_value key [] = Nothing 
@@ -71,16 +60,17 @@ make_leaves :: [(Char, Int)] -> [(Tree)]
 make_leaves lst = [(Leaf k v) | (k,v) <- lst]
 
 
-
 -- Insert an element into a sorted list so that the resulting list is sorted (ascending)
 sorted_insert :: (Eq a, Ord a) => a -> [a] -> [a]
 sorted_insert element lst = sorted_insert_helper element lst []
 
+sorted_insert_helper :: (Eq a, Ord a) => a -> [a] -> [a] -> [a]
 sorted_insert_helper element [] acc = acc ++ [element]
 sorted_insert_helper element (x:xs) acc = 
     if element <= x then acc ++ [element, x] ++ xs 
     else sorted_insert_helper element xs (acc ++ [x])
 
+sorted_insert_many :: (Eq a, Ord a) => [a] -> [a] -> [a]
 sorted_insert_many [] lst = lst 
 sorted_insert_many (x:xs) lst = 
     sorted_insert_many xs (sorted_insert x lst)
@@ -90,44 +80,47 @@ make_tree :: [Tree] -> Int -> Maybe Tree
 make_tree leaf_list n = 
     -- First, sort the list. Do this only once.
     -- Until there are only two elements in the list, do the following: 
-    -- 1. Take the two first elements of the sorted list (the two smallest ones) 
-    -- 2. Make a node of them. The frequency of this node is the sum of the two. 
+    -- 1. Take the n first elements of the sorted list (the n smallest ones) 
+    -- 2. Make a node over all of them. The frequency of this node is the sum of all the n nodes. 
     -- 3. Insert the resulting node in the list, making sure it is still sorted.
     -- 4. Repeat.
-    -- When there are only two elements left, combine them and return the resulting node.
+    -- When there is only one node left in the list, return that node as the root of the tree.
     let sorted_leaf_list = sort leaf_list in 
         make_tree_helper sorted_leaf_list n
     
--- TODO: Make trees maybe heheheheh
+
 make_tree_helper :: [Tree] -> Int -> Maybe Tree
 make_tree_helper [] n = Nothing
 make_tree_helper [l1] n = Just l1
 make_tree_helper tree_list n = 
-    let tree_nodes = take n tree_list
-        new_node = (Node tree_nodes (sum_frequencies tree_nodes))
-        remaining_list = set_minus tree_list tree_nodes in 
-        make_tree_helper (sorted_insert new_node remaining_list) n
+    let tree_nodes = take n tree_list                               -- Take the n smallest nodes
+        new_node = (Node tree_nodes (sum_frequencies tree_nodes))   -- Combine them under a new node
+        remaining_list = tree_list \\ tree_nodes in                 -- Set minus the original node list and the n-node list
+        make_tree_helper (sorted_insert new_node remaining_list) n  -- Insert the new node into the remaining list and continue
 
 
--- Use depth first to traverse the tree, adding 0's and 1's for every left and right 
--- turn, respectively. When a leaf is encountered, add (letter, encoding) to the accumulator. 
+-- Given a tree, returns the dictionary/association list representing the optimal prefix code.
 get_encoding_dict :: Maybe Tree -> [(Char, [Int])]
 get_encoding_dict tree = 
     case tree of 
         Nothing -> []
         Just t -> get_encoding_dict_helper t [] [] 0
 
+
 get_encoding_dict_helper :: Tree -> [Int] -> [(Char, [Int])] -> Int -> [(Char, [Int])]
 get_encoding_dict_helper (Leaf letter _) encoding acc n = 
     [(letter, encoding)] ++ acc 
 
+-- From left to right, traverse each child node for their respective leaves, increasing
+-- the 'index' n by one for each passed child node.
 get_encoding_dict_helper (Node (branch:branches) f) encoding acc n = 
     let leftmost_acc = get_encoding_dict_helper branch (encoding ++ [n]) acc 0 in 
         (get_encoding_dict_helper (Node branches f) encoding (acc) (n + 1)) ++ leftmost_acc
 
+-- When we have passed all children of a node, return the accumulator
 get_encoding_dict_helper (Node [] f) encoding acc n = acc
 
-
+-- Given a string and an encoding dictionary, returns the corresponding encoded string.
 get_encoded_message_from_dict :: String -> [(Char, [Int])] -> [Int]
 get_encoded_message_from_dict [] encoding_dict = []
 get_encoded_message_from_dict [x] encoding_dict = 
@@ -142,6 +135,8 @@ get_encoded_message_from_dict (x:xs) encoding_dict =
             Just enc -> enc ++ get_encoded_message_from_dict xs encoding_dict
             Nothing -> error "Could not find an encoding for the symbol: " x
 
+-- Given a string and an integer n, returns the compressed version of the string
+-- derived from an n-ary tree. 
 get_encoded_message :: String -> Int -> [Int]
 get_encoded_message msg n = 
     let freq = count_char_frequency msg 
@@ -150,7 +145,8 @@ get_encoded_message msg n =
         dict = get_encoding_dict tree in 
             get_encoded_message_from_dict msg dict 
 
-
+-- Given a string and an integer n, returns the encoding dictionary representing the optimal
+-- prefix code for that string with a compression alphabet of arity n.
 get_encoding_dict_from_string :: String -> Int -> [(Char, [Int])]
 get_encoding_dict_from_string msg n = 
     let freq = count_char_frequency msg 
@@ -158,7 +154,8 @@ get_encoding_dict_from_string msg n =
         tree = make_tree leaves n in
         get_encoding_dict tree 
 
-
+-- Given a string and an integer n, returns the n-ary tree from which the optimal prefix
+-- code can be derived.
 get_huffman_tree :: String -> Int -> Tree
 get_huffman_tree str n = 
     let freq = count_char_frequency str 
@@ -168,35 +165,41 @@ get_huffman_tree str n =
                 Just t -> t 
 
 
-decode_bit_stream :: [Int] -> Tree -> String 
-decode_bit_stream stream huffman_tree = 
+-- Given a list of integers and a tree to traverse, returns the corresponding string
+-- generated by traversing the tree in accordance to the integer list.
+decode_int_stream :: [Int] -> Tree -> String 
+decode_int_stream stream huffman_tree = 
     case huffman_tree of 
-        Node _ _ -> traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
+        Node _ _ -> traverse_tree_from_int_stream stream huffman_tree huffman_tree ""
         Leaf c f -> replicate f c 
-    
+
+-- The tree used for decoding strings in run_decode.
+mississippi_tree :: Tree
 mississippi_tree = get_huffman_tree "mississippi river" 3
 
-traverse_tree_from_bit_stream :: [Int] -> Tree -> Tree -> String -> String
-traverse_tree_from_bit_stream [] huffman_tree root msg = 
+-- Traverses a tree by instructions given from a list of integers. 
+-- When no integers remain in the list, returns the accumulated string.
+traverse_tree_from_int_stream :: [Int] -> Tree -> Tree -> String -> String
+traverse_tree_from_int_stream [] huffman_tree root msg = 
     case huffman_tree of 
-        Leaf letter _ -> msg ++ [letter]
-        Node _ _    -> error "Int stream ended, but traversal did not end at leaf node. Was the bit stream decoded with the right tree?"
+        Leaf l _ -> msg ++ [l]
+        Node _ _ -> error "Int stream ended, but traversal did not end at leaf node. Was the bit stream decoded with the right tree?"
 
-traverse_tree_from_bit_stream (x:xs) huffman_tree root msg =
+traverse_tree_from_int_stream (x:xs) huffman_tree root msg =
     case huffman_tree of 
         -- Take the left node if encountering a 0, right node otherwise.
-        Node branches _ -> traverse_tree_from_bit_stream xs (branches!!x) root msg 
+        Node branches _ -> traverse_tree_from_int_stream xs (branches!!x) root msg 
 
         -- If it's a leaf, add the corresponding letter to the message and start again from the root. 
         Leaf char _  -> let bit_stream = ([x] ++ xs) 
                             decoded_message = (msg ++ [char]) in
-                                traverse_tree_from_bit_stream bit_stream root root decoded_message
+                                traverse_tree_from_int_stream bit_stream root root decoded_message
 
                             
 
 
 
--- Run IO 
+-- Demo IO 
 run_encode = do 
     putStrLn "Please enter a message to encode: "
     user_input <- getLine 
@@ -213,6 +216,6 @@ run_decode = do
     user_input <- getLine
     let u_input = read user_input :: [Int]
     putStrLn "Decoding message with proprietary and copyrighted n-ary Huffman coding scheme..."
-    let msg = decode_bit_stream u_input mississippi_tree
+    let msg = decode_int_stream u_input mississippi_tree
     putStrLn "The decoded message is: "
     return msg

@@ -75,23 +75,23 @@ make_tree leaf_list =
     -- First, sort the list. Do this only once.
     -- Until there are only two elements in the list, do the following: 
     -- 1. Take the two first elements of the sorted list (the two smallest ones) 
-    -- 2. Make a node of them. The frequency of this node is the sum of the two. 
+    -- 2. Make a node over both of them. The frequency of this node is the sum of the two. 
     -- 3. Insert the resulting node in the list, making sure it is still sorted.
     -- 4. Repeat.
-    -- When there are only two elements left, combine them and return the resulting node.
+    -- When there is just one node left in the list, return that as the root of the tree.
     let sorted_leaf_list = sort leaf_list in 
         make_tree_helper sorted_leaf_list
     
--- TODO: Make trees maybe heheheheh
+
 make_tree_helper :: [Tree] -> Maybe Tree
 make_tree_helper [] = Nothing
-make_tree_helper [l1] = Just l1
+make_tree_helper [l] = Just l
 make_tree_helper (l1 : l2 : leaves) = 
     let node = Node l1 l2 (sum_frequency l1 l2) in 
         make_tree_helper (sorted_insert node leaves)
 
 
--- Use depth first to traverse the tree, adding 0's and 1's for every left and right 
+-- Use depth first to traverse the tree, adding 0's and 1's to the encoding for every left and right 
 -- turn, respectively. When a leaf is encountered, add (letter, encoding) to the accumulator. 
 get_encoding_dict :: Maybe Tree -> [(Char, [Bit])]
 get_encoding_dict tree = 
@@ -110,6 +110,8 @@ get_encoding_dict_helper (Node l1 l2 _) encoding acc =
         get_encoding_dict_helper l2 (encoding ++ [One]) left_acc
 
 
+-- Given an dictionary/association list of (char, bit sequence), converts
+-- a string into its corresponding bit sequence.
 get_encoded_message_from_dict :: String -> [(Char, [Bit])] -> [Bit]
 get_encoded_message_from_dict [] encoding_dict = []
 get_encoded_message_from_dict [x] encoding_dict = 
@@ -124,6 +126,8 @@ get_encoded_message_from_dict (x:xs) encoding_dict =
             Just enc -> enc ++ get_encoded_message_from_dict xs encoding_dict
             Nothing -> error "Could not find an encoding for the symbol: " x
 
+-- Given a string, returns the compressed string constructed from the
+-- optimal prefix code for the string.
 get_encoded_message :: String -> [Bit]
 get_encoded_message msg = 
     let freq = count_char_frequency msg 
@@ -132,6 +136,8 @@ get_encoded_message msg =
         dict = get_encoding_dict tree in 
             get_encoded_message_from_dict msg dict 
 
+-- Returns the dictionary/association list that represents the optimal
+-- prefix code for a string.
 get_encoding_dict_from_string :: String -> [(Char, [Bit])]
 get_encoding_dict_from_string msg = 
     let freq = count_char_frequency msg 
@@ -139,7 +145,8 @@ get_encoding_dict_from_string msg =
         tree = make_tree leaves in
         get_encoding_dict tree 
 
-
+-- Given a string, returns the binary tree from which the optimal prefix
+-- code can be derived.
 get_huffman_tree :: String -> Tree
 get_huffman_tree str = 
     let freq = count_char_frequency str 
@@ -148,16 +155,22 @@ get_huffman_tree str =
                 Nothing -> error "Could not generate huffman tree for an empty message. " 
                 Just t -> t 
 
-
+-- Given a bit stream and a binary tree from which to decode the string, 
+-- returns the decoded string. 
 decode_bit_stream :: [Bit] -> Tree -> String 
 decode_bit_stream stream huffman_tree = 
     case huffman_tree of 
         Node _ _ _ -> traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
-        Leaf c f   -> replicate f c
+        Leaf c f   -> replicate f c -- Edge case where the tree was constructed
+                                    -- From a message with only one unique character.
     
-
+-- Binary tree used for decoding strings in run_decode.
 some_tree = get_huffman_tree "hello there"
 
+-- Given a bit stream and a binary tree, traverses the tree by reading 
+-- bits from the bit stream in sequence. When a leaf is encountered, the
+-- corresponding letter is added to the decoded message and the procedure
+-- Continues from the root.
 traverse_tree_from_bit_stream :: [Bit] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
     case huffman_tree of 
@@ -186,7 +199,7 @@ bit_arr_to_bit_string :: [Bit] -> String
 bit_arr_to_bit_string arr = [char | b <- arr, let char = if b == Zero then '0' else '1']
 
 
--- Run IO 
+-- Demo IO
 run_encode = do 
     putStrLn "Please enter a message to encode: "
     user_input <- getLine 
