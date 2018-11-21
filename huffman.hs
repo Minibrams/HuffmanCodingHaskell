@@ -1,8 +1,8 @@
 import Data.List
 
 -- Data types 
-data Tree = Leaf Char Integer | Node Tree Tree Integer deriving Show
-data Bit  = One | Zero deriving (Show, Eq)
+data Tree = Leaf Char Int | Node Tree Tree Int deriving Show
+data Bit  = One | Zero deriving (Show, Eq, Read)
 
 -- Defining instances of Eq and Ord so I can compare Nodes and Leaves with each other based on their frequency
 instance Eq Tree where 
@@ -46,7 +46,7 @@ add_or_increment (k, v) (x:xs) =
 
 
 -- Returns an association list of characters and their frequency as integers. 
-count_char_frequency :: String -> [(Char, Integer)]
+count_char_frequency :: String -> [(Char, Int)]
 count_char_frequency str = count_char_frequency_helper str []
 count_char_frequency_helper [] acc = acc 
 count_char_frequency_helper (x:xs) acc = 
@@ -55,7 +55,7 @@ count_char_frequency_helper (x:xs) acc =
 
 
 -- Converts an association list to a list of leaves 
-make_leaves :: [(Char, Integer)] -> [(Tree)]
+make_leaves :: [(Char, Int)] -> [(Tree)]
 make_leaves lst = [(Leaf k v) | (k,v) <- lst]
 
 
@@ -143,9 +143,13 @@ get_huffman_tree str =
 
 
 decode_bit_stream :: [Bit] -> Tree -> String 
-decode_bit_stream stream huffman_tree = traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
+decode_bit_stream stream huffman_tree = 
+    case huffman_tree of 
+        Node _ _ _ -> traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
+        Leaf c f   -> replicate f c
+    
 
-some_tree = get_huffman_tree "hello"
+some_tree = get_huffman_tree "hello there"
 
 traverse_tree_from_bit_stream :: [Bit] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
@@ -182,8 +186,8 @@ run_encode = do
     return encoded_message
 
 run_decode = do 
-    putStrLn "Please enter a message {0,1}* to decode with our proprietary Huffman tree: "
+    putStrLn "Please enter a bit stream :: [Bit] to decode with our proprietary Huffman tree: "
     user_input <- getLine 
-    let decoded_message = decode_bit_stream (bit_string_to_bit_arr user_input) some_tree 
-    return decoded_message
+    let decoded_message = read user_input :: [Bit]
+    return (decode_bit_stream decoded_message some_tree)
 

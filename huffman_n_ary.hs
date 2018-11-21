@@ -123,7 +123,7 @@ get_encoding_dict_helper (Leaf letter _) encoding acc n =
 
 get_encoding_dict_helper (Node (branch:branches) f) encoding acc n = 
     let leftmost_acc = get_encoding_dict_helper branch (encoding ++ [n]) acc 0 in 
-        get_encoding_dict_helper (Node branches f) encoding (acc ++ leftmost_acc) (n + 1) 
+        (get_encoding_dict_helper (Node branches f) encoding (acc) (n + 1)) ++ leftmost_acc
 
 get_encoding_dict_helper (Node [] f) encoding acc n = acc
 
@@ -161,9 +161,12 @@ get_huffman_tree str n =
 
 
 decode_bit_stream :: [Int] -> Tree -> String 
-decode_bit_stream stream huffman_tree = traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
-
-some_tree = get_huffman_tree "hello there" 5
+decode_bit_stream stream huffman_tree = 
+    case huffman_tree of 
+        Node _ _ -> traverse_tree_from_bit_stream stream huffman_tree huffman_tree ""
+        Leaf c f -> replicate f c 
+    
+some_tree = get_huffman_tree "hhhhhhh" 2
 
 traverse_tree_from_bit_stream :: [Int] -> Tree -> Tree -> String -> String
 traverse_tree_from_bit_stream [] huffman_tree root msg = 
